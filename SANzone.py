@@ -1,6 +1,7 @@
 import argparse
 import time
 import os.path
+import re
 from UcsSdk import *
 
 
@@ -11,8 +12,7 @@ parser.add_argument('-i', '--input',
 parser.add_argument('-o', '--output',
 	default="MDS_Config-" + time.strftime("%H:%M-%m-%d-%Y") +".txt",
 	help='Destination file for MDS configuration. Default is "MDS_Config-date.txt"')
-parser.add_argument('-a', '--array', 
-	help="Array to zone HBA's to.")
+parser.add_argument('-a', '--array', required=True, help="Array to zone HBA's to.")
 parser.add_argument('-u', '--ucs', help="Hostname or IP address of UCS Manager")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
