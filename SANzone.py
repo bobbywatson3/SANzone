@@ -16,9 +16,10 @@ parser.add_argument('-a', '--array',
 parser.add_argument('-u', '--ucs', help="Hostname or IP address of UCS Manager")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
-parser.add_argument('-s', '--serviceprofile', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space.")
+parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space.")
 args = parser.parse_args()
 
+print args.serviceprofile
 array = args.array
 vsanA = 5
 vsanB = 50
@@ -35,13 +36,15 @@ def create_hba_dict_from_ucs(ucs, login, password):
 		print "Getting HBA information"
 		getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
 		moList = handle.GetManagedObject(getRsp, "vnicFc")
-	
-		for mo in moList:
-			if str(mo.Addr) != 'derived' and args.serviceprofile in str(mo.Dn):
-				origDn = str(mo.Dn)
-				origDn = origDn.replace('org-root/ls-','')
-				origDn = origDn.replace('/fc','')
-				output[origDn] = mo.Addr		
+		
+		for serviceprofile in args.serviceprofile:
+			for mo in moList:
+				if str(mo.Addr) != 'derived' and serviceprofile in str(mo.Dn):
+					print serviceprofile
+					origDn = str(mo.Dn)
+					origDn = origDn.replace('org-root/ls-','')
+					origDn = origDn.replace('/fc','')
+					output[origDn] = mo.Addr		
 		handle.Logout()
 		return output
 		

@@ -24,4 +24,4 @@ Tweaking will definitely be required if you want to use this for your own enviro
 
 Usage
 
-python SANzone.py --ucs [UCS IP] --login [UCS login] --password [UCS password] -serviceprofile [Service Profile name] --array [array name in MDS]
+python SANzone.py --ucs [UCS IP] --login [UCS login] --password [UCS password] --serviceprofile [Service Profile names separated by space] --array [array name in MDS]
