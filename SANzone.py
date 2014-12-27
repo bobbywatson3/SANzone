@@ -12,12 +12,11 @@ parser.add_argument('-o', '--output',
 	default="MDS_Config-" + time.strftime("%H:%M-%m-%d-%Y") +".txt",
 	help='Destination file for MDS configuration. Default is "MDS_Config-date.txt"')
 parser.add_argument('-a', '--array', 
-	default='VNX5800-A',
-	help="Array to zone HBA's to. Default is VNX5800-A")
+	help="Array to zone HBA's to.")
 parser.add_argument('-u', '--ucs', help="Hostname or IP address of UCS Manager")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
-parser.add_argument('-s', '--server', help="UCS Server Profile name.")
+parser.add_argument('-s', '--serviceprofile', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space.")
 args = parser.parse_args()
 
 array = args.array
@@ -35,10 +34,10 @@ def create_hba_dict_from_ucs(ucs, login, password):
 		output = {}
 		print "Getting HBA information"
 		getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
-		moArr = handle.GetManagedObject(getRsp, "vnicFc")
+		moList = handle.GetManagedObject(getRsp, "vnicFc")
 	
-		for mo in moArr:
-			if str(mo.Addr) != 'derived' and args.server in str(mo.Dn):
+		for mo in moList:
+			if str(mo.Addr) != 'derived' and args.serviceprofile in str(mo.Dn):
 				origDn = str(mo.Dn)
 				origDn = origDn.replace('org-root/ls-','')
 				origDn = origDn.replace('/fc','')
@@ -69,8 +68,8 @@ def create_hba_dict_from_file(file):
 if not (args.input or args.ucs):
 	print 'HBA input file must be specified using -i option, or UCS must be specified using -u option'
 	quit(0)
-elif args.ucs and not (args.login and args.password and args.server):
-	print "Login, password, and server must be specified when using UCS as -l [login] -p [password] -s [service profile]"
+elif args.ucs and not (args.login and args.password and args.serviceprofile):
+	print "Login, password, and service profile must be specified when using UCS as -l [login] -p [password] -s [service profile]"
 	quit(0)
 elif (args.input and not os.path.isfile(args.input)):
 	print 'Input file "%s" does not exist.' % args.input
