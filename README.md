@@ -5,6 +5,7 @@ SANzone is a script to pull Service Profile HBA info from UCS Manager and genera
 An HBA input file can also be used if you want to generate MDS configs from HBA and WWPN addresses without connecting to a UCS Manager. The file should be in the format:
 
 >HBA-A,00:00:00:00:00:00:00:00
+
 >HBA-B,00:00:00:00:00:00:00:00
 
 SSH implementation is planned for future revisions to push config directly to MDS switches, as well as the ability to connect to multiple UCS Managers.
