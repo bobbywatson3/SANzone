@@ -1,6 +1,4 @@
 #SANzone
-by Bobby Watson
-
 
 SANzone is a script to pull HBA info from UCS Manager and generate SAN zone configuration for Cisco MDS switches.
 
@@ -13,12 +11,14 @@ SSH implementation is planned for future revisions to push config directly to MD
 
 Tweaking will definitely be required if you want to use this for your own environment.
 
------------------
+---
 Requirements:
 
 - Python 2.7
 - [Cisco UCS SDK](https://communities.cisco.com/docs/DOC-37174)
------------------
-Usage
 
+---
+Usage
+```
 python SANzone.py --ucs [UCS IP] --login [UCS login] --password [UCS password] --serviceprofile [Service Profile names in regex format, or individual names separated by space] --array [array name in MDS]
+```
