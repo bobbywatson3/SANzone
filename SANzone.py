@@ -4,8 +4,6 @@ import os.path
 import re
 from UcsSdk import *
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', 
 	help="Input file containing list of hosts and HBA's in the format \"host_hba_name,hba_wwpn\"")
@@ -16,10 +14,9 @@ parser.add_argument('-a', '--array', required=True, help="Array to zone HBA's to
 parser.add_argument('-u', '--ucs', help="Hostname or IP address of UCS Manager")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
-parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space.")
+parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space, or a regular expression may be used.")
 args = parser.parse_args()
 
-print args.serviceprofile
 array = args.array
 vsanA = 5
 vsanB = 50
@@ -36,15 +33,14 @@ def create_hba_dict_from_ucs(ucs, login, password):
 		print "Getting HBA information"
 		getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
 		moList = handle.GetManagedObject(getRsp, "vnicFc")
-		
-		for serviceprofile in args.serviceprofile:
+		for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
 			for mo in moList:
-				if str(mo.Addr) != 'derived' and serviceprofile in str(mo.Dn):
-					print serviceprofile
-					origDn = str(mo.Dn)
-					origDn = origDn.replace('org-root/ls-','')
-					origDn = origDn.replace('/fc','')
-					output[origDn] = mo.Addr		
+				if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
+					editedDn = str(mo.Dn)
+					editedDn = editedDn.replace('org-root/ls-','')
+					editedDn = editedDn.replace('/fc','')
+					if re.match(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
+						output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dict
 		handle.Logout()
 		return output
 		
