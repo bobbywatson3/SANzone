@@ -1,8 +1,6 @@
 #SANzone
-
 by Bobby Watson
 
------------------
 
 SANzone is a script to pull HBA info from UCS Manager and generate SAN zone configuration for Cisco MDS switches.
 
