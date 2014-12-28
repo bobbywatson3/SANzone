@@ -1,4 +1,4 @@
-SANzone
+#SANzone
 
 by Bobby Watson
 
@@ -18,8 +18,8 @@ Tweaking will definitely be required if you want to use this for your own enviro
 -----------------
 Requirements:
 
-Python 2.7
-Cisco UcsSdk
+- Python 2.7
+- [Cisco UCS SDK](https://communities.cisco.com/docs/DOC-37174)
 -----------------
 Usage
 
