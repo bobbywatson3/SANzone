@@ -2,6 +2,7 @@ import argparse
 import time
 import os.path
 import re
+import getpass
 from UcsSdk import *
 
 parser = argparse.ArgumentParser()
@@ -27,6 +28,8 @@ def create_hba_dict_from_ucs(ucs, login, password):
 	try:
 		handle = UcsHandle()
 		print "Connecting to UCS..."
+		if not password:
+			password = getpass.getpass(prompt='UCS Password: ')
 		handle.Login(ucs, username=login, password=password)
 		print "Connection Successful"
 		output = {}
@@ -67,15 +70,15 @@ def create_hba_dict_from_file(file):
 if not (args.input or args.ucs):
 	print 'HBA input file must be specified using -i option, or UCS must be specified using -u option'
 	quit(0)
-elif args.ucs and not (args.login and args.password and args.serviceprofile):
-	print "Login, password, and service profile must be specified when using UCS as -l [login] -p [password] -s [service profile]"
+elif args.ucs and not (args.login and args.serviceprofile): # removed "and args.password" from within parenthesis
+	print "Login and service profile must be specified when using UCS as -l [login] -s [service profile]"
 	quit(0)
 elif (args.input and not os.path.isfile(args.input)):
 	print 'Input file "%s" does not exist.' % args.input
 	quit(0)
 elif args.input:
 	host_hbas = create_hba_dict_from_file(args.input)
-elif args.ucs and args.login and args.password:
+elif args.ucs and args.login:
 	host_hbas = create_hba_dict_from_ucs(args.ucs, args.login, args.password)
 
 #Create fcalias
