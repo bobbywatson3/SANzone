@@ -7,7 +7,7 @@ An HBA input file can also be used if you want to generate MDS configs from HBA 
 ServerName-HBA-A,00:00:00:00:00:00:00:00
 ServerName-HBA-B,00:00:00:00:00:00:00:00
 ```
-SSH implementation is planned for future revisions to push config directly to MDS switches, as well as the ability to connect to multiple UCS Managers.
+SSH implementation is planned for future revisions to push config directly to MDS switches.
 
 Tweaking will definitely be required if you want to use this for your own environment.
 
@@ -20,5 +20,5 @@ Requirements:
 ---
 Usage
 ```
-python SANzone.py --ucs [UCS IP] --login [UCS login] --password [UCS password] --serviceprofile [Service Profile search string in regex format, or individual names separated by space] --array [array name in MDS]
+python SANzone.py --ucs [UCS IP's separated by space] --login [UCS login] --serviceprofile [Service Profile search string in regex format, or individual names separated by space] --array [array name in MDS]
 ```

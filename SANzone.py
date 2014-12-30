@@ -81,7 +81,7 @@ elif args.input:
 elif args.ucs and args.login:
 	host_hbas = {}
 	for ucs in args.ucs:
-		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password)) # This isn't working. Only the HBA's from the last UCS are returned.
+		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password)) 
 		print host_hbas
 #Create fcalias
 def create_fcalias(switch):
