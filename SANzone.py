@@ -12,7 +12,7 @@ parser.add_argument('-o', '--output',
 	default="MDS_Config-" + time.strftime("%H:%M-%m-%d-%Y") +".txt",
 	help='Destination file for MDS configuration. Default is "MDS_Config-date.txt"')
 parser.add_argument('-a', '--array', required=True, help="Array to zone HBA's to.")
-parser.add_argument('-u', '--ucs', help="Hostname or IP address of UCS Manager")
+parser.add_argument('-u', '--ucs', nargs='+', help="Hostname or IP address of UCS Managers separated by a space")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
 parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space, or a regular expression may be used.")
@@ -27,7 +27,7 @@ zonesetB = 'zoneset name PCloud-B vsan %s\n' % vsanB
 def create_hba_dict_from_ucs(ucs, login, password):
 	try:
 		handle = UcsHandle()
-		print "Connecting to UCS..."
+		print "Connecting to UCS at", ucs
 		if not password:
 			password = getpass.getpass(prompt='UCS Password: ')
 		handle.Login(ucs, username=login, password=password)
@@ -79,8 +79,10 @@ elif (args.input and not os.path.isfile(args.input)):
 elif args.input:
 	host_hbas = create_hba_dict_from_file(args.input)
 elif args.ucs and args.login:
-	host_hbas = create_hba_dict_from_ucs(args.ucs, args.login, args.password)
-
+	host_hbas = {}
+	for ucs in args.ucs:
+		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password)) # This isn't working. Only the HBA's from the last UCS are returned.
+		print host_hbas
 #Create fcalias
 def create_fcalias(switch):
 	output = '' # Create empty string that fcaliases will be appended too
@@ -118,7 +120,9 @@ def create_zones(switch):
 				output += "member fcalias %s\n" % array
 		return output
 
-
+if not host_hbas:
+	print 'No matching Service Profiles found.'
+	quit(0)
 print "Creating zone config"
 print "Array:"
 print array
