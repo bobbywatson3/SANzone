@@ -27,8 +27,8 @@ zonesetB = 'zoneset name PCloud-B vsan %s\n' % vsanB
 def create_hba_dict_from_ucs(ucs, login, password):
 	try:
 		handle = UcsHandle()
-		print "Connecting to UCS at", ucs
-		if not password:
+		print "Connecting to UCS at %s as %s." % (ucs, login)
+                if not password:
 			password = getpass.getpass(prompt='UCS Password: ')
 		handle.Login(ucs, username=login, password=password)
 		print "Connection Successful"
@@ -40,10 +40,10 @@ def create_hba_dict_from_ucs(ucs, login, password):
 			for mo in moList:
 				if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
 					editedDn = str(mo.Dn)
-					editedDn = editedDn.replace('org-root/ls-','')
-					editedDn = editedDn.replace('/fc','')
-					if re.match(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
-						output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dict
+                                        if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
+                                            editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
+                                            editedDn = editedDn.replace(r'/fc','')
+                                            output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dict
 		handle.Logout()
 		return output
 		
@@ -81,8 +81,7 @@ elif args.input:
 elif args.ucs and args.login:
 	host_hbas = {}
 	for ucs in args.ucs:
-		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password)) # This isn't working. Only the HBA's from the last UCS are returned.
-		print host_hbas
+		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password))
 #Create fcalias
 def create_fcalias(switch):
 	output = '' # Create empty string that fcaliases will be appended too
@@ -124,8 +123,7 @@ if not host_hbas:
 	print 'No matching Service Profiles found.'
 	quit(0)
 print "Creating zone config"
-print "Array:"
-print array
+print "Array:", array
 print "Host HBA's:"
 for host in host_hbas.keys():
 	print host
