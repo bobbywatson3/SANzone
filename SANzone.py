@@ -25,34 +25,45 @@ zonesetA = 'zoneset name PCloud-A vsan %s\n' % vsanA
 zonesetB = 'zoneset name PCloud-B vsan %s\n' % vsanB
 
 def create_hba_dict_from_ucs(ucs, login, password):
-    try:
-        handle = UcsHandle()
-	print "Connecting to UCS at %s as %s." % (ucs, login)
-        if not password:
-	    password = getpass.getpass(prompt='UCS Password: ')
-	handle.Login(ucs, username=login, password=password)
-	print "Connection Successful"
-	output = {}
-	print "Getting HBA information"
-	getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
-	moList = handle.GetManagedObject(getRsp, "vnicFc")
-	for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
-	    for mo in moList:
-	       	if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
-                  	editedDn = str(mo.Dn)
-                        if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
-                            editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
-                            editedDn = editedDn.replace(r'/fc','')
-                            output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dictandle.Logout()
-	return output
-		
-    except Exception, err:
-		print "Exception:", str(err)
-		import traceback, sys
-		print '-' * 60
-		traceback.print_exc(file=sys.stdout)
-		print '-' * 60
+    for attempt in range(3):        
+        try:
+            handle = UcsHandle()
+            print "Connecting to UCS at %s as %s." % (ucs, login)
+            if not password:
+                password = getpass.getpass(prompt='UCS Password: ')
+            handle.Login(ucs, username=login, password=password)
+            print "Connection Successful"
+            output = {}
+            print "Getting HBA information"
+            getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
+            moList = handle.GetManagedObject(getRsp, "vnicFc")
+            for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
+                for mo in moList:
+                    if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
+                            editedDn = str(mo.Dn)
+                            if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
+                                editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
+                                editedDn = editedDn.replace(r'/fc','')
+                                output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dictandle.Logout()
+            return output
+            break
 
+        except Exception as err:
+            if "Authentication failed" in str(err):
+                print 'Authentication failed.'
+                password = getpass.getpass(prompt='Please re-enter password for %s at UCS %s: ' % (login, ucs))
+            else:
+                print err.message
+                print "Exception:", str(err)
+                import traceback, sys
+                print '-' * 60
+                traceback.print_exc(file=sys.stdout)
+                print '-' * 60
+                break
+    else:
+        print "Authentication failed. Skipping UCS %s." % ucs
+        output = {}
+        return output
 def create_hba_dict_from_file(file):	
 	host_hbas_string = open(file).read() # open(args.input).read()
 	# split host_hbas_string into list
@@ -124,8 +135,11 @@ def create_zones(switch):
 if not host_hbas:
 	print 'No matching Service Profiles found.'
 	quit(0)
+print '-' * 15
 print "Creating zone config"
+print '-' * 15
 print "Array:", array
+print '-' * 15
 print "Host HBA's:"
 hbas_sorted = []
 for host in host_hbas.keys():
@@ -164,28 +178,11 @@ config += zones_for_B
 config += '\n'
 config += zonesetB
 config += '\n'
-config += 'zoneset activate name PCloud-B vsan %d' % vsanB
+config += 'zoneset activate name PCloud-B vsan %d\n' % vsanB
 
 mds_output = open(args.output, 'w')
 mds_output.write(config)
 mds_output.close
-
+print '-' * 20
 print "MDS Config successfully generated and saved to %s." % os.path.realpath(mds_output.name)
 
-"""
-# Print out the config commands
-print '-' * 20
-print 'MDS A Config'
-print '-' * 20, '\n'
-print fcaliases_for_A
-print zones_for_A
-print zonesetA
-print 'zoneset activate name PCloud-A vsan %d' % vsanA, '\n'
-print '-' * 20
-print 'MDS B Config'
-print '-' * 20, '\n'
-print fcaliases_for_B
-print zones_for_B
-print zonesetB
-print 'zoneset activate name PCloud-B vsan %d' % vsanB
-"""
