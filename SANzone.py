@@ -25,29 +25,28 @@ zonesetA = 'zoneset name PCloud-A vsan %s\n' % vsanA
 zonesetB = 'zoneset name PCloud-B vsan %s\n' % vsanB
 
 def create_hba_dict_from_ucs(ucs, login, password):
-	try:
-		handle = UcsHandle()
-		print "Connecting to UCS at %s as %s." % (ucs, login)
-                if not password:
-			password = getpass.getpass(prompt='UCS Password: ')
-		handle.Login(ucs, username=login, password=password)
-		print "Connection Successful"
-		output = {}
-		print "Getting HBA information"
-		getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
-		moList = handle.GetManagedObject(getRsp, "vnicFc")
-		for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
-			for mo in moList:
-				if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
-					editedDn = str(mo.Dn)
-                                        if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
-                                            editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
-                                            editedDn = editedDn.replace(r'/fc','')
-                                            output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dict
-		handle.Logout()
-		return output
+    try:
+        handle = UcsHandle()
+	print "Connecting to UCS at %s as %s." % (ucs, login)
+        if not password:
+	    password = getpass.getpass(prompt='UCS Password: ')
+	handle.Login(ucs, username=login, password=password)
+	print "Connection Successful"
+	output = {}
+	print "Getting HBA information"
+	getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
+	moList = handle.GetManagedObject(getRsp, "vnicFc")
+	for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
+	    for mo in moList:
+	       	if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
+                  	editedDn = str(mo.Dn)
+                        if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
+                            editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
+                            editedDn = editedDn.replace(r'/fc','')
+                            output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dictandle.Logout()
+	return output
 		
-	except Exception, err:
+    except Exception, err:
 		print "Exception:", str(err)
 		import traceback, sys
 		print '-' * 60
@@ -79,9 +78,11 @@ elif (args.input and not os.path.isfile(args.input)):
 elif args.input:
 	host_hbas = create_hba_dict_from_file(args.input)
 elif args.ucs and args.login:
-	host_hbas = {}
-	for ucs in args.ucs:
-		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password))
+    if not args.password:
+        args.password = getpass.getpass(prompt='UCS Password: ')
+    host_hbas = {}
+    for ucs in args.ucs:
+	host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password))
 
 #Create fcalias
 def create_fcalias(switch):
