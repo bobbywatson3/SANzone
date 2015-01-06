@@ -126,8 +126,12 @@ if not host_hbas:
 print "Creating zone config"
 print "Array:", array
 print "Host HBA's:"
+hbas_sorted = []
 for host in host_hbas.keys():
-	print host
+	hbas_sorted.append(host)
+hbas_sorted.sort()
+for hba in hbas_sorted:
+    print hba
 # create fcaliases
 fcaliases_for_A = create_fcalias('A')
 fcaliases_for_B = create_fcalias('B')
@@ -161,9 +165,11 @@ config += zonesetB
 config += '\n'
 config += 'zoneset activate name PCloud-B vsan %d' % vsanB
 
-output = open(args.output, 'w')
-output.write(config)
-output.close
+mds_output = open(args.output, 'w')
+mds_output.write(config)
+mds_output.close
+
+print "MDS Config successfully generated and saved to %s." % os.path.realpath(mds_output.name)
 
 """
 # Print out the config commands
