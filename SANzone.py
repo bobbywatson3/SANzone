@@ -81,12 +81,8 @@ elif args.input:
 elif args.ucs and args.login:
 	host_hbas = {}
 	for ucs in args.ucs:
-<<<<<<< HEAD
 		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password))
-=======
-		host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password)) 
-		print host_hbas
->>>>>>> 39b2a2fc7970b80bd89b77f0dfdcd62e44463720
+
 #Create fcalias
 def create_fcalias(switch):
 	output = '' # Create empty string that fcaliases will be appended too
