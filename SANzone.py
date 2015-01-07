@@ -61,7 +61,7 @@ def create_hba_dict_from_ucs(ucs, login, password):
                 print '-' * 60
                 break
     else:
-        print "Authentication failed. Skipping UCS %s." % ucs
+        print "Connection failed. Skipping UCS %s." % ucs
         output = {}
         return output
 def create_hba_dict_from_file(file):	
