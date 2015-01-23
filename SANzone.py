@@ -4,6 +4,7 @@ import os.path
 import re
 import getpass
 from UcsSdk import *
+from prettytable import PrettyTable
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', 
@@ -11,11 +12,12 @@ parser.add_argument('-i', '--input',
 parser.add_argument('-o', '--output',
 	default="MDS_Config-" + time.strftime("%H:%M-%m-%d-%Y") +".txt",
 	help='Destination file for MDS configuration. Default is "MDS_Config-date.txt"')
-parser.add_argument('-a', '--array', required=True, help="Array to zone HBA's to.")
+parser.add_argument('-a', '--array', help="Array to zone HBA's to.")
 parser.add_argument('-u', '--ucs', nargs='+', help="Hostname or IP address of UCS Managers separated by a space")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
 parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space, or a regular expression may be used.")
+parser.add_argument('-f', '--answerfile', help="File with all required options in the format: array = array1, ucs = 10.0.0.1, login = admin, serviceprofile = sp1")
 args = parser.parse_args()
 
 array = args.array
@@ -24,7 +26,7 @@ vsanB = 50
 zonesetA = 'zoneset name PCloud-A vsan %s\n' % vsanA
 zonesetB = 'zoneset name PCloud-B vsan %s\n' % vsanB
 
-def create_hba_dict_from_ucs(ucs, login, password):
+def create_hba_dict_from_ucs(ucs, login, password, service_profile_list):
     for attempt in range(3):        
         try:
             handle = UcsHandle()
@@ -37,7 +39,7 @@ def create_hba_dict_from_ucs(ucs, login, password):
             print "Getting HBA information"
             getRsp = handle.GetManagedObject(None, None,{"Dn":"org-root/"}) # Last part is a key value pair to filter for a specific MO
             moList = handle.GetManagedObject(getRsp, "vnicFc")
-            for serviceprofile in args.serviceprofile: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
+            for serviceprofile in service_profile_list: # Making an additional for loop to allow format "-s sp1 sp2" or regex like "-s sp[1,2]
                 for mo in moList:
                     if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
                             editedDn = str(mo.Dn)
@@ -76,10 +78,49 @@ def create_hba_dict_from_file(file):
 		output[key] = str(val)
 	return output
 
+def parse_answer_file(file):
+    answerfile = open(file).read()
+    answerfile = answerfile.split('\n')
+    answers = {}
+    for item in answerfile:
+        if "ucs" in item.lower():
+            ip_list = re.findall('((?:(?:[0-9]{1,3}.){3})[0-9]{1,3})', item) # RegEx to grab all IP addresses and return them as a list
+            answers['ucs'] = ip_list
+        elif "array" in item.lower():
+            item = item.replace(' ', '')
+            item = re.search('((?<==)\S*)', item) # Grab everything after the "=" sign
+            answers['array'] = item.group()
+        elif "login" in item.lower():
+            item = item.replace(' ', '')
+            item = re.search('((?<==)\S*)', item) # Grab everything after the "=" sign
+            answers['login'] = item.group()
+        elif "serviceprofile" in item.lower():
+            item = re.search('((?<==).*)', item)
+            ucs_list = item.group().split()
+            answers['serviceprofile'] = ucs_list
+        elif "vsana" in item.lower():
+            item = re.search('([1-9]|(?:[0-9][0-9])|(?:[0-9][0-9][0-9])|(?:[1-4][0-9][0-9][0-4]))', item) # Huge regex to match VSAN 1-4094
+            answers['vsanA'] = item.group()
+        elif "vsanb" in item.lower():
+            item = re.search('([1-9]|(?:[0-9][0-9])|(?:[0-9][0-9][0-9])|(?:[1-4][0-9][0-9][0-4]))', item) # Huge regex to match VSAN 1-4094
+            answers['vsanB'] = item.group()
+        elif "input" in item.lower():
+            item = item.replace('input', '')
+            item = item.replace('=', '')
+            item = re.search('(\S.*(?<!(?:[ ]$)))', item) #RegEx to ignore leading and trailing spaces, and capture path and/or file name
+    return answers
 # Check that args are present/valid and then either create hba dict from file or UCS
-if not (args.input or args.ucs):
-	print 'HBA input file must be specified using -i option, or UCS must be specified using -u option'
-	quit(0)
+if args.answerfile:
+    answers = {}
+    answers = parse_answer_file(args.answerfile)
+    host_hbas = {}
+    if not 'password' in answers:
+        answers['password'] = getpass.getpass(prompt='UCS Password: ')
+    for ucs in answers['ucs']:
+        host_hbas.update(create_hba_dict_from_ucs(ucs, answers['login'], answers['password'], answers['serviceprofile']))
+elif not (args.input or args.ucs):
+    print 'HBA input file must be specified using -i option, or UCS must be specified using -u option. Use --help for more info.'
+    quit(0)
 elif args.ucs and not (args.login and args.serviceprofile): # removed "and args.password" from within parenthesis
 	print "Login and service profile must be specified when using UCS as -l [login] -s [service profile]"
 	quit(0)
@@ -93,7 +134,7 @@ elif args.ucs and args.login:
         args.password = getpass.getpass(prompt='UCS Password: ')
     host_hbas = {}
     for ucs in args.ucs:
-	host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password))
+	host_hbas.update(create_hba_dict_from_ucs(ucs, args.login, args.password, args.serviceprofile))
 
 #Create fcalias
 def create_fcalias(switch):
@@ -141,17 +182,26 @@ print '-' * 15
 print "Array:", array
 print '-' * 15
 print "Host HBA's:"
+hba_table = PrettyTable(["Host HBA", "WWPN"])
+hba_table.align["Host HBA"] = "l"
+hba_table.sortby = "Host HBA"
+for host, hba in host_hbas.items():
+    hba_table.add_row([host, hba])
+print hba_table
+"""
 hbas_sorted = []
 for host in host_hbas.keys():
 	hbas_sorted.append(host)
 hbas_sorted.sort()
 for hba in hbas_sorted:
     print hba
+"""
 # create fcaliases
 fcaliases_for_A = create_fcalias('A')
 fcaliases_for_B = create_fcalias('B')
 
 # create zones and zonesets
+# TODO - make this work with answerfile
 zones_for_A = create_zones('A')
 zones_for_B = create_zones('B')
 
