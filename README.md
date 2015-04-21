@@ -20,5 +20,5 @@ Requirements:
 ---
 Usage
 ```
-python SANzone.py --ucs [UCS IP's separated by space] --login [UCS login] --serviceprofile [Service Profile search string in regex format, or individual names separated by space] --array [array name in MDS]
+python SANzone.py --ucs [UCS IP's separated by space] --login [UCS login] --serviceprofile [Service Profile search string wildcard, or individual names separated by space] --array [array name in MDS]
 ```
