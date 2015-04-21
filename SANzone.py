@@ -16,7 +16,7 @@ parser.add_argument('-a', '--array', help="Array to zone HBA's to.")
 parser.add_argument('-u', '--ucs', nargs='+', help="Hostname or IP address of UCS Managers separated by a space")
 parser.add_argument('-l', '--login', help="Login for UCS Manager.")
 parser.add_argument('-p', '--password', help="Password for UCS Manager.")
-parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name. Multiple Service Profile names can be provided separated by a space, or a regular expression may be used.")
+parser.add_argument('-s', '--serviceprofile', nargs='+', help="UCS Service Profile name wildcard. Multiple Service Profile names can be provided separated by a space, or simply putting a generic term like 'ESXi' would zone ALL Service Profiles that contain ESXi.")
 parser.add_argument('-f', '--answerfile', help="File with all required options in the format: array = array1, ucs = 10.0.0.1, login = admin, serviceprofile = sp1")
 args = parser.parse_args()
 
@@ -43,7 +43,8 @@ def create_hba_dict_from_ucs(ucs, login, password, service_profile_list):
                 for mo in moList:
                     if str(mo.Addr) != 'derived': # Don't include Service Profile Templates
                             editedDn = str(mo.Dn)
-                            if re.search(serviceprofile, editedDn): # Check regex expression for match against cleaned up name
+                            #print editedDn
+                            if serviceprofile in editedDn: # Check regex expression for match against cleaned up name
                                 editedDn = re.sub('^((?:org-root.*)/ls-)+','',editedDn) #removes all org info up to SP name
                                 editedDn = editedDn.replace(r'/fc','')
                                 output[editedDn] = mo.Addr # Append key/value pair of any matched Dn's to output dictandle.Logout()
